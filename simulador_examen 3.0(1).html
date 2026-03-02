@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador MDPC - 117 Preguntas Sin Simplificar</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; display: flex; justify-content: center; }
+        .quiz-container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 850px; }
+        .header { text-align: center; border-bottom: 2px solid #eee; margin-bottom: 20px; padding-bottom: 10px; }
+        .question { display: none; }
+        .question.active { display: block; }
+        .option { display: block; background: #f8f9fa; border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 8px; cursor: pointer; transition: 0.2s; font-size: 0.95em; }
+        .option:hover { background: #e9ecef; }
+        .option.selected { border-color: #007bff; background: #e8f0fe; }
+        .option.correct { background: #d1e7dd !important; border-color: #0f5132 !important; color: #0f5132; font-weight: bold; }
+        .option.wrong { background: #f8d7da !important; border-color: #842029 !important; color: #842029; }
+        .feedback { font-weight: bold; margin: 15px 0; text-align: center; font-size: 1.1em; }
+        .btn { background: #007bff; color: white; border: none; padding: 12px 25px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn:disabled { background: #ccc; cursor: not-allowed; }
+        #result-view { display: none; }
+        .review-card { border: 2px solid #eee; padding: 20px; margin-bottom: 20px; border-radius: 10px; background: #fff; }
+        .rev-option { padding: 10px; margin: 5px 0; border-radius: 5px; border: 1px solid #eee; font-size: 0.9em; }
+        .rev-correct { background: #d1e7dd; color: #0f5132; font-weight: bold; border-color: #badbcc; }
+        .rev-wrong { background: #f8d7da; color: #842029; border-color: #f5c2c7; }
+        .creds { font-size: 10px; color: #999; text-align: center; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="quiz-container">
+        <div id="quiz-view">
+            <div class="header">
+                <h2>Simulador Complexivo  - Banco Completo</h2>
+                <p id="progress" style="font-weight:bold; color:#007bff;">Pregunta 1 de 117</p>
+            </div>
+            <div id="questions-wrapper"></div>
+            <div id="feedback-area" class="feedback"></div>
+            <div style="text-align: right; margin-top: 10px;">
+                <button id="action-btn" class="btn" onclick="handleAction()" disabled>Validar Respuesta</button>
+            </div>
+        </div>
+
+        <div id="result-view">
+            <div class="header">
+                <h1>Resultado: <span id="score-display">0</span> / 117</h1>
+                <button class="btn" onclick="location.reload()">Reiniciar Simulador (Orden Aleatorio)</button>
+            </div>
+            <div id="review-area">
+                <h3 style="border-bottom: 2px solid #333; padding-bottom: 10px;">Revisión Detallada:</h3>
+                <div id="full-review-list"></div>
+            </div>
+        </div>
+        <div class="creds">creado por Alexis </div>
+    </div>
+
+    <script>
+        const rawBank = [
+            {q: "1. ¿El origen del Derecho Procesal Constitucional se dio en?:", opts: ["a. El siglo XVIII", "b. El siglo XIX", "c. El siglo XX", "d. El siglo XXI"], a: 1},
+            {q: "2. ¿Cuál de estos modelos de justicia constitucional adoptó el Ecuador?", opts: ["a. Sistema de tribunal constitucional ad hoc", "b. Sistema de organismo especializado dentro de la función judicial.", "c. Sistema de atribución de la justicia constitucional a organismos judiciales no especializados", "d. Sistema de Corte Constitucional fuera de la función judicial y jueces de instancia."], a: 3},
+            {q: "3. ¿Cuáles son las competencia de la Corte Constitucional?", opts: ["a. Conocer y resolver, en segunda instancia, acciones de protección", "b. Conocer y resolver demandas de inconstitucionalidad", "c. Dirimir conflictos de competencia", "d. Conocer y resolver acciones extraordinarias de protección"], a: 3},
+            {q: "4. ¿Explique las atribución de los jueces de instancia según la Constitución de 2008?", opts: ["a. Inaplicar artículos de códigos y leyes contrarios a la Constitución", "b. Conocer y resolver acciones extraordinarias de protección", "c. Suspender la tramitación de una causa y remitir la consulta de constitucionalidad a la Corte Constitucional", "d. Dirimir conflictos de competencia."], a: 2},
+            {q: "5. ¿El derecho a la seguridad jurídica implica?:", opts: ["a. Toda persona tiene derecho al acceso gratuito a la justicia", "b. Respeto a la Constitución y en la existencia de normas jurídicas previas, claras, públicas y aplicadas por las autoridades competentes.", "c. Las víctimas de infracciones penales gozarán de protección especial, se les garantizará su no revictimización, particularmente en la obtención y valoración de las pruebas, y se las protegerá de cualquier amenaza.", "d. El derecho a la defensa."], a: 1},
+            {q: "6. ¿El derecho a la tutela judicial efectiva supone?:", opts: ["a. Respeto a la Constitución y en la existencia de normas jurídicas previas, claras, públicas y aplicadas por las autoridades competentes.", "b. Toda persona tiene derecho al acceso gratuito a la justicia", "c. Las víctimas de infracciones penales gozarán de protección especial, se les garantizará su no revictimización, particularmente en la obtención y valoración de las pruebas, y se las protegerá de cualquier amenaza.", "d. El derecho a la defensa."], a: 1},
+            {q: "7. ¿En Colombia, el equivalente a la acción de protección es?:", opts: ["a. La acción de amparo", "b. La acción de tutela", "c. La acción de libertad", "d. La acción de garantía defensorial."], a: 1},
+            {q: "8. ¿Cuáles son las garantías de competencia de la Corte Constitucional?", opts: ["a. Acción de protección", "b. Hábeas data", "c. Hábeas corpus", "d. Acción por incumplimiento."], a: 3},
+            {q: "9. ¿Identifique las atribución de los jueces de instancia en materia de control de constitucionalidad según la Constitución de 2008?", opts: ["a. Inaplicar artículos de códigos y leyes contrarios a la Constitución", "b. Conocer y resolver acciones extraordinarias de protección", "c. Suspender la tramitación de una causa y remitir la consulta a la Corte Constitucional", "d. Declarar inconstitucionales los artículos contrarios a la Constitución con efectos para el caso concreto."], a: 2},
+            {q: "10. ¿Los derechos protegidos por la acción de protección, según la Ley orgánica de garantías jurisdiccionales, son?:", opts: ["a. Todos los derechos reconocidos en la Constitución y tratados internacionales sobre derechos humanos", "b. Todos los derechos reconocidos en la Constitución", "c. Todos los derechos reconocidos en los tratados internacionales sobre derechos humanos", "d. Todos los derechos reconocidos en la Constitución y tratados internacionales sobre derechos humanos, que no estén amparados por otras garantías"], a: 3},
+            {q: "11. ¿La Corte Constitucional, en la sentencia del caso Furukawa, declaró que?:", opts: ["a. Se vulneró el derecho a la consulta previa", "b. Se vulneró la prohibición de la esclavitud", "c. Se vulneró el derecho a la consulta prelegislativa", "d. Se vulneró el derecho al libre desarrollo de la personalidad."], a: 1},
+            {q: "12. ¿En México, el equivalente a la acción de protección es?:", opts: ["a. La acción de amparo", "b. La acción de tutela", "c. La acción de libertad", "d. La acción de garantía defensorial."], a: 0},
+            {q: "13. ¿En la sentencia No 352-22-EP/24, sobre la inscripción extraordinaria de nacimiento de las niñas, niños y adolescentes, la Corte Constitucional declaró?:", opts: ["a. La vulneración de los derechos de Alejandro a la identidad (art. 66. 28 CRE), a la garantía a ser escuchado en el momento oportuno y en igualdad de condiciones (art. 76.7.c CRE) y a acceder a bienes y servicios públicos y privados de calidad (art. 66. 25 CRE).", "b. La vulneración de los derechos de Alejandro a acceder a bienes y servicios públicos y privados de calidad (art. 66. 25 CRE).", "c. La vulneración del derecho de Alejandro a la identidad (art. 66. 28 CRE).", "d. La vulneración del derecho de Alejandro a ser escuchado en el momento oportuno y en igualdad de condiciones (art. 76.7.c CRE) y a acceder a bienes y servicios públicos y privados de calidad (art. 66. 25 CRE)."], a: 0},
+            {q: "14. ¿Cuál de las siguientes características define a la concepción formal de la argumentación?", opts: ["a. Enfoca el contenido moral del argumento.", "b. Se basa en la estructura lógica del razonamiento.", "c. Busca resolver problemas pragmáticos.", "d. Prioriza la interpretación teleológica."], a: 1},
+            {q: "15. ¿Qué distingue a la concepción material de la argumentación jurídica?", opts: ["a. Su énfasis en las reglas procesales.", "b. El análisis del contenido ético o moral del argumento.", "c. La aplicación de silogismos deductivos.", "d. La exclusión de los factores pragmáticos."], a: 1},
+            {q: "16. ¿Cuál es un objetivo central de la concepción pragmática de la argumentación?", opts: ["a. Garantizar la coherencia lógica del argumento.", "b. Resolver problemas concretos en contextos específicos.", "c. Maximizar la universalidad de las normas.", "d. Limitar la interpretación subjetiva."], a: 1},
+            {q: "17. ¿Qué es un argumento teleológico?", opts: ["a. Un razonamiento basado en el texto literal de la norma.", "b. Un razonamiento que busca el propósito de la norma.", "c. Un argumento que usa precedentes judiciales.", "d. Un argumento exclusivamente deductivo."], a: 1},
+            {q: "18. ¿Qué define al argumento genético o psicológico?", opts: ["a. Su referencia a la intención del legislador al crear la norma.", "b. La aplicación del razonamiento deductivo puro.", "c. Su énfasis en los efectos futuros de la norma.", "d. La conexión con valores universales."], a: 0},
+            {q: "19. ¿Qué método interpretativo busca la coherencia dentro del sistema jurídico?", opts: ["a. Argumento teleológico.", "b. Argumento sistemático.", "c. Argumento psicológico.", "d. Argumento inductivo."], a: 1},
+            {q: "20. ¿Cuál es una característica de los textos argumentativos?", opts: ["a. La subjetividad absoluta.", "b. La presentación de un punto de vista fundamentado.", "c. La exclusión de contraargumentos.", "d. La ausencia de premisas."], a: 1},
+            {q: "21. ¿Qué caracteriza a la argumentación subjuntiva o clasificatoria?", opts: ["a. Busca clasificar un hecho dentro de una norma.", "b. Se basa en principios morales.", "c. Persigue el propósito final de la norma.", "d. Aplica la ponderación de derechos."], a: 0},
+            {q: "22. ¿Cuál es el propósito del razonamiento finalista?", opts: ["a. Determinar la literalidad de la norma.", "b. Identificar el propósito que subyace en la norma.", "c. Clasificar hechos en categorías legales.", "d. Establecer normas universales."], a: 1},
+            {q: "23. ¿Qué es la ponderación en el contexto de la argumentación jurídica?", opts: ["a. Un método de interpretación literal.", "b. Una técnica para resolver conflictos entre principios.", "c. Un razonamiento exclusivamente deductivo.", "d. Un enfoque centrado en el sistema legal."], a: 1},
+            {q: "24. ¿Qué elementos son esenciales en la composición de un argumento jurídico?", opts: ["a. Premisa, contraargumento y refutación.", "b. Analogía, contradicción y síntesis.", "c. Prueba, evidencia y prejuicio.", "d. Intuición, conclusión y premisa."], a: 0},
+            {q: "25. ¿Qué aspecto diferencia la argumentación judicial de otros tipos de argumentación?", opts: ["a. Su carácter subjetivo.", "b. Su necesidad de fundamentación normativa.", "c. La exclusión de principios éticos.", "d. Su flexibilidad interpretativa."], a: 1},
+            {q: "26. ¿Qué función cumple la reconstrucción de argumentos en un contexto judicial?", opts: ["a. Presentar nuevas pruebas.", "b. Identificar la estructura lógica de un argumento previo.", "c. Reducir la complejidad del caso.", "d. Evitar contradicciones normativas."], a: 1},
+            {q: "27. ¿Cuál es la primera fase en el juicio fáctico?", opts: ["a. La valoración de pruebas.", "b. La ponderación de derechos.", "c. La interpretación sistemática.", "d. La emisión de una sentencia."], a: 0},
+            {q: "28. ¿Qué define al juicio fáctico en el proceso judicial?", opts: ["a. Es una interpretación literal de la norma.", "b. Es el establecimiento de hechos con base en las pruebas.", "c. Es la aplicación de precedentes.", "d. Es un análisis puramente normativo."], a: 1},
+            {q: "29. ¿Qué criterio es esencial para justificar el juicio de los hechos?", opts: ["a. La universalidad.", "b. La razonabilidad.", "c. La sistematicidad.", "d. La coherencia."], a: 1},
+            {q: "30. ¿Qué herramientas son fundamentales para la valoración de pruebas?", opts: ["a. Métodos inductivos y deductivos.", "b. Razonamiento intuitivo.", "c. Argumentos retóricos.", "d. Juicios abstractos."], a: 0},
+            {q: "31. ¿Qué es un silogismo jurídico?", opts: ["a. Un razonamiento inductivo aplicado a la norma.", "b. Un razonamiento que conecta hechos con normas para concluir.", "c. Un análisis de los efectos pragmáticos de una sentencia.", "d. Una técnica de ponderación."], a: 1},
+            {q: "32. ¿Qué caracteriza a un razonamiento deductivo en la argumentación judicial?", opts: ["a. Su análisis de casos similares.", "b. Su énfasis en la conexión lógica entre premisas y conclusión.", "c. Su enfoque en los valores subyacentes.", "d. Su exclusión de principios universales."], a: 1},
+            {q: "33. ¿Qué caracteriza a una sentencia judicial bien motivada?", opts: ["a. La inclusión de referencias literales a la norma.", "b. Su coherencia, claridad y razonabilidad.", "c. La ausencia de contradicciones entre hechos.", "d. La presentación de un único punto de vista."], a: 1},
+            {q: "34. ¿Qué criterio es indispensable en el control de justificación de una sentencia?", opts: ["a. La subjetividad del juez.", "b. La universalidad de los argumentos.", "c. La simplicidad del lenguaje.", "d. La inclusión de analogías."], a: 1},
+            {q: "35. ¿Qué se entiende por coherencia en una sentencia judicial?", opts: ["a. La ausencia de errores tipográficos.", "b. La consistencia entre las partes de la decisión.", "c. La aplicación estricta de la norma.", "d. La inclusión de múltiples interpretaciones."], a: 1},
+            {q: "36. ¿Qué regla general debe seguirse en el control de motivación de una sentencia?", opts: ["a. Respetar exclusivamente el texto literal de la norma.", "b. Garantizar la claridad y suficiencia de las razones ofrecidas.", "c. Priorizar la jurisprudencia internacional.", "d. Evitar cualquier análisis contextual."], a: 1},
+            {q: "37. ¿Qué tipo de razonamiento parte de casos particulares hacia una conclusión general?", opts: ["a. Deductivo.", "b. Inductivo.", "c. Teleológico.", "d. Sistemático."], a: 1},
+            {q: "38. ¿Qué aspecto evalúa el criterio de corrección en una argumentación judicial?", opts: ["a. La originalidad de los argumentos.", "b. La conformidad de los argumentos con las normas aplicables.", "c. La rapidez en la emisión de la sentencia.", "d. La complejidad del razonamiento."], a: 1},
+            {q: "39. ¿Qué característica define a la consistencia en una decisión judicial?", opts: ["a. La estructura lógica del razonamiento.", "b. La diversidad de fuentes normativas utilizadas.", "c. La simplicidad de las conclusiones.", "d. La inclusión de múltiples puntos de vista."], a: 0},
+            {q: "40. ¿Qué principio es clave en los pronunciamientos de la Corte Constitucional de Ecuador sobre argumentación jurídica?", opts: ["a. La universalidad de las normas internacionales.", "b. La motivación adecuada de las decisiones judiciales.", "c. La separación de poderes.", "d. La exclusión de argumentos pragmáticos."], a: 1},
+            {q: "41. ¿Qué criterio usa la Corte Constitucional de Ecuador para determinar la validez de una sentencia?", opts: ["a. La capacidad del juez para citar precedentes.", "b. La justificación suficiente y razonada de las decisiones.", "c. La extensión del texto de la sentencia.", "d. La frecuencia de los recursos de apelación."], a: 1},
+            {q: "42. ¿Qué caracteriza el control del cumplimiento de la motivación en Ecuador?", opts: ["a. La revisión literal del texto normativo.", "b. La verificación de la claridad y suficiencia de las razones expuestas.", "c. La valoración del impacto político de la sentencia.", "d. La aplicación estricta del precedente judicial."], a: 1},
+            {q: "43. ¿Qué aspecto se evalúa en la universalidad de una decisión judicial?", opts: ["a. Su aplicabilidad a casos similares futuros.", "b. La claridad en la redacción.", "c. El uso exclusivo de normas nacionales.", "d. La imparcialidad del juez."], a: 0},
+            {q: "44. ¿Qué pronunciamiento de la Corte Constitucional de Ecuador marcó un precedente en la protección de derechos fundamentales?", opts: ["a. La aprobación de leyes económicas.", "b. La interpretación de la motivación en sentencias de derechos humanos.", "c. La eliminación de procesos de apelación.", "d. La negación del uso de técnicas inductivas."], a: 1},
+            {q: "45. ¿Qué consecuencia tiene una argumentación judicial inconsistente?", opts: ["a. La apelación automática del caso.", "b. La nulidad de la sentencia por falta de motivación adecuada.", "c. La imposición de sanciones al juez.", "d. La exclusión del caso de futuras revisiones."], a: 1},
+            {q: "46. ¿Qué técnica argumentativa sería más adecuada en un conflicto entre dos principios constitucionales?", opts: ["a. Interpretación literal.", "b. Ponderación.", "c. Razonamiento inductivo.", "d. Juicio fáctico"], a: 1},
+            {q: "47. ¿Qué tipo de argumentación es fundamental en el razonamiento finalista?", opts: ["a. El análisis de las consecuencias prácticas.", "b. La estricta aplicación del texto normativo.", "c. El uso de precedentes judiciales.", "d. La exclusión de consideraciones éticas."], a: 0},
+            {q: "48. ¿Cuál es el propósito del silogismo jurídico en una sentencia?", opts: ["a. Garantizar la coherencia lingüística.", "b. Conectar hechos y normas de manera lógica.", "c. Ampliar el alcance de la jurisprudencia.", "d. Reducir la complejidad del caso."], a: 1},
+            {q: "49. ¿Qué tipo de razonamiento es clave en la valoración de pruebas?", opts: ["a. Inductivo.", "b. Deductivo.", "c. Sistemático.", "d. Teleológico."], a: 0},
+            {q: "50. ¿Qué aspecto es fundamental en la motivación de una sentencia según la Corte Constitucional de Ecuador?", opts: ["a. Su extensión textual.", "b. La claridad y suficiencia de las razones jurídicas ofrecidas.", "c. El uso exclusivo de normas nacionales.", "d. La exclusión de factores pragmáticos."], a: 1},
+            {q: "51. ¿Qué técnica argumentativa permite resolver ambigüedades normativas (entre principios)?", opts: ["a. Ponderación.", "b. Juicio fáctico.", "c. Razonamiento deductivo.", "d. Interpretación literal."], a: 0},
+            {q: "52. ¿Qué criterio garantiza la legitimidad de una sentencia?", opts: ["a. La coherencia entre los fundamentos y la conclusión.", "b. La simplicidad del lenguaje jurídico.", "c. La aceptación unánime de las partes.", "d. La referencia a normas internacionales."], a: 0},
+            {q: "53. ¿Qué quiere decir que la interpretación pertenece al tipo de “preguntas filosóficas”?", opts: ["a. A que resultan útiles solo para la academia.", "b. A que no existe un solo método establecido para interpretar.", "c. A que el método de interpretación se debe buscar en la filosofía.", "d. El originalismo."], a: 1},
+            {q: "54. ¿A qué vicio motivacional hace referencia la Corte Constitucional en su sentencia 1158-17-EP/21, cuando habla de “insuficiencia radical”?", opts: ["a. Apariencia.", "b. Incongruencia frente a las partes.", "c. Inexistencia.", "d. Incomprensibilidad."], a: 2},
+            {q: "55. ¿Cuál es, para Konrad Hesse, la utilidad de fijar un problema jurídico en el proceso de interpretación constitucional como concretización?", opts: ["a. No desviarse de la discusión.", "b. Incorporar un contexto fáctico de aplicación.", "c. No resolver situaciones que no son problemáticas.", "d. Poder dar una respuesta de lo que la constitución significa siempre y en todos los casos."], a: 1},
+            {q: "56. ¿Cuál de las siguientes no es una dificultad de la aplicación de los métodos tradicionales de interpretación a la constitución, según Konrad Hesse?", opts: ["a. Que la constitución no prescribe una voluntad preestablecida, en sentido estricto.", "b. Que desentrañar la voluntad del constituyente no es una actividad que refleje la noción moderna de constitución.", "c. Que la interpretación constitucional nunca se reduce a la mera subsunción.", "d. Que no es claro cuál de los métodos tradicionales de interpretación hay que preferir."], a: 0},
+            {q: "57. ¿La teoría según la cual la interpretación consiste en develar el significado del texto es?:", opts: ["a. Cognoscitivista.", "b. Ortodoxa.", "c. Escéptica.", "d. Subjetiva."], a: 0},
+            {q: "58. ¿El positivismo metodológico postula?", opts: ["a. Que la relación entre derecho y moral es contingente.", "b. Una relación identificativa y justificativa entre derecho y moral.", "c. Que el derecho y la moral nunca pueden coincidir.", "d. Que existe una obligación moral de respetar las normas positivas."], a: 0},
+            {q: "59. ¿El concepto “brecha interpretativa” se refiere a qué?", opts: ["a. Se dan distintas lecturas de una disposición entre distintos intérpretes.", "b. Ciertas disposiciones tienen muchas interpretaciones razonables pero muy distintas.", "c. Cuando varias personas participan en el proceso de creación normativa es difícil desentrañar el sentido de una disposición.", "d. El órgano que crea la norma y su intérprete existe una distancia infranqueable."], a: 3},
+            {q: "60. ¿A qué se refiere el sentido estricto de interpretación jurídica al que se refiere Wroblewski?", opts: ["a. A la interpretación de textos jurídicos.", "b. A no realizar interpretación extensiva.", "c. A no utilizar la interpretación analógica.", "d. A ajustarse al texto literal de la disposición."], a:0},
+            {q: "61. ¿Qué tipo de razonamiento es el que utilizan propiamente los legisladores y jueces, por oposición a los juristas?", opts: ["a. Teórico.", "b. Moral.", "c. Sentimental.", "d. Práctico."], a: 3},
+            {q: "62. ¿Cómo puede explicarse el “enunciado normativo”?", opts: ["a. Enunciado a interpretar.", "b. Disposición jurídica.", "c. Proposición prescriptiva.", "d. Texto normativo."], a: 2},
+            {q: "63. ¿A qué se refiere Alexy con la expresión “reconstrucción del derecho”?", opts: ["a. A que es necesario retornar a los valores fundacionales establecidos en la Constitución.", "b. Al proceso de constitucionalización del ordenamiento jurídico después de la segunda guerra mundial.", "c. Al proceso que comprende la interpretación, la resolución de conflictos normativos, a la restricción de su campo de aplicación y a la fundamentación de reglas derivadas de principios.", "d. Al uso de la interpretación sistemática."], a: 2},
+            {q: "64. ¿Cuál es el objeto (no el objetivo ni la finalidad) de la interpretación jurídica? Escoja la respuesta más exacta", opts: ["a. La Ley.", "b. Desentrañar el sentido de las normas.", "c. Los estándares normativos.", "d. Todo aquel fenómeno simbólico que tiene valor normativo."], a: 3},
+            {q: "65. ¿De acuerdo con Kelsen, ¿cómo se describiría la relación entre interpretación y aplicación del Derecho?", opts: ["a. Inescindible.", "b. Indescifrable.", "c. Contingente.", "d. Circunstancial."], a: 0},
+            {q: "66. ¿En la visión Kelseniana, ¿Los jueces que resuelven casos concretos producen normas jurídicas?", opts: ["a. No, porque son la boca de la ley.", "b. Sí, porque las sentencias contienen normas particulares.", "c. No, porque los jueces dan soluciones a casos concretos.", "d. Sí, porque emiten sentencias erga omnes."], a: 1},
+            {q: "67. ¿Quién realiza impropiamente una interpretación jurídico-política, de acuerdo con Kelsen?", opts: ["a. El abogado, cuando se comporta como político.", "b. El jurista, cuando busca influir en la adopción de una interpretación correcta de entre varias posibles.", "c. El juez cuando cae en el activismo judicial.", "d. El legislador, cuando opina sobre la interpretación sin que se le haya preguntado al Pleno de la Asamblea."], a: 1},
+            {q: "68. ¿A qué se refiere Carlos Nino cuando señala que existe una relación convencional entre el símbolo y el objeto?", opts: ["a. A que viene dada de antemano.", "b. A que es una relación causa-efecto.", "c. A que es independiente de la voluntad de la comunidad lingüística.", "d. A que parte de un consenso más o menos general."], a: 3},
+            {q: "69. ¿De acuerdo con Carlos Nino, el positivismo metodológico postula que los derechos subjetivos?:", opts: ["a. No existen en el plano de la realidad.", "b. Son derechos jurídicos plenos.", "c. Existen en el plano de la moral.", "d. Afectan negativamente la justificabilidad moral del sistema."], a: 2},
+            {q: "70. ¿Qué tipo de indeterminación lingüística correspondería asignar a los conceptos “enojo” y “maldad” en la siguiente frase: “No es fácil saber cuándo estás actuando por enojo y cuándo por pura maldad”?", opts: ["a. Laguna.", "b. Ambigüedad.", "c. Falta de determinación.", "d. Vaguedad."], a: 3},
+            {q: "71. ¿De acuerdo con la interpretación de la mayoría de la Corte Constitucional en la sentencia 10-18-CN/19 (Matrimonio entre personas del mismo sexo) el concepto “matrimonio” sería?", opts: ["a. Vago.", "b. Indescifrable.", "c. Ambiguo.", "d. Determinado."], a: 2},
+            {q: "72. ¿A qué corriente de interpretación constitucional anglosajona se ajustaría más el voto salvado del juez presidente Salgado en las sentencias 10-18-CN/19 (matrimonio de personas del mismo sexo) y 11-18-CN/19 (matrimonio igualitario)?", opts: ["a. Lógica.", "b. Telemática.", "c. Exegética.", "d. Originalista."], a: 3},
+            {q: "73. ¿Para Jacques Lacan, la noción de “puntada” se refiere a?", opts: ["a. La asignación retroactiva de significado a los significantes del encadenamiento de signos.", "b. La asignación ultractiva de significantes a los significados de del encadenamiento de signos.", "c. La develación retroactiva del significado a los significantes del encadenamiento de signos.", "d. La asignación ultractiva de significados a los significantes del encadenamiento de signos."], a: 0},
+            {q: "74. ¿A qué tipo de definición corresponde la siguiente: “Para efectos del presente contrato, las partes entenderán por ‘precio’ el valor que se pagará a modo de contraprestación por el servicio prestado, sin incluir recargos por retraso en el pago”?", opts: ["a. Contextual.", "b. Lexicográfica.", "c. Ostensiva.", "d. Estipulativa."], a: 3},
+            {q: "75. ¿Qué subprincipio del test de proporcionalidad hace referencia a una adecuación entre medios y fines?", opts: ["a. Proporcionalidad en sentido amplio", "b. Proporcionalidad en sentido estricto", "c. Idoneidad", "d. Necesidad"], a: 2},
+            {q: "76. ¿Qué implica reconstruir un precedente?", opts: ["a. Implica crear un nuevo precedente donde antes no existía uno.", "b. Implica deshacerse de un precedente que resulta injusto o inconveniente.", "c. Implica reconocer que una decisión anterior contiene un precedente y reformularlo como una regla.", "d. Implica reconocer que no existe un precedente y que en el futuro deberá establecérselo."], a: 2},
+            {q: "77. ¿Cuál de estos valores y principios no maximiza una doctrina fuerte, basada en el stare decisis?", opts: ["a. Certeza", "b. Activismo judicial.", "c. Apariencia de justicia", "d. Eficiencia"], a: 1},
+            {q: "78. ¿Ecuador, según nuestra Constitución, es un Estado constitucional de?:", opts: ["a. Derechos y justicia", "b. Derecho y justicia", "c. Derecho", "d. Justicia"], a: 0},
+            {q: "79. ¿En qué casos un juez puede abstenerse de resolver una causa puesta en su conocimiento, por falta de norma jurídica?", opts: ["a. En ningún caso.", "b. Cuando sea alegado por una de las partes", "c. Cuando sea alegado por ambas partes", "d. Cuando lo ordene su superior"], a: 0},
+            {q: "80. ¿En qué casos una norma jurídica puede restringir el contenido de las garantías jurisdiccionales?", opts: ["a. En ningún caso.", "b. Solo cuando se trata de una ley orgánica", "c. Solo cuando se trata de una ley ordinaria", "d. Solo cuando se justifica por parte del Ejecutivo"], a: 0},
+            {q: "81. ¿Qué órgano es el encargado de interpretar la Constitución?", opts: ["a. Corte Constitucional.", "b. Corte Nacional de Justicia", "c. Asamblea Nacional", "d. Presidente de la República"], a: 0},
+            {q: "82. ¿Ecuador, tiene un control de constitucionalidad?", opts: ["a. Concentrado", "b. Difuso", "c. Mixto.", "d. Ninguna de las otras opciones"], a: 2},
+            {q: "83. ¿Quién puede presentar una acción de protección frente a una presunta vulneración de derechos constitucionales?", opts: ["a. Cualquier persona.", "b. La defensoría pública", "c. La defensoría del pueblo", "d. La víctima exclusivamente"], a: 0},
+            {q: "84. ¿Los jueces de la Corte Constitucional, son regulados administrativamente por?", opts: ["a. Ninguna de las otras opciones.", "b. Consejo de la Judicatura", "c. Asamblea Nacional", "d. Corte Nacional de Justicia"], a: 0},
+            {q: "85. ¿La Corte Constitucional es un órgano que se encuentra dentro de?", opts: ["a. Ninguna de las otras opciones.", "b. Función judicial", "c. Función ejecutiva", "d. Función legislativa", "e. Función de transparencia y control social"], a: 0},
+            {q: "86. ¿Los precedentes jurisprudenciales obligatorios en materia constitucional pueden ser dictados por?", opts: ["a. La Corte Constitucional.", "b. Cualquier juez constitucional", "c. La Corte Nacional de Justicia", "d. Todos los anteriores"], a: 0},
+            {q: "87. ¿Una acción de protección emitida contra un acto administrativo originado en el municipio de Quito y, que causa efectos en la misma ciudad, debe ser presentada en?", opts: ["a. Quito.", "b. Ante cualquier juez a nivel nacional", "c. Corte Provincial de Pichincha", "d. Corte Constitucional"], a: 0},
+            {q: "88. ¿Qué juez es competente para conocer una acción extraordinaria de protección presentada en contra de una sentencia dictada por la Corte Provincial de Guayas?", opts: ["a. Corte Constitucional.", "b. Cualquier juez de Guayas", "c. Corte Nacional de Justicia", "d. Ninguna de las anteriores"], a: 0},
+            {q: "89. ¿Una acción de habeas corpus es conocida por?", opts: ["a. Un juez del lugar donde se encuentra la persona ilegalmente retenida.", "b. Cualquier juez del país", "c. Corte Constitucional", "d. Corte Nacional de Justicia"], a: 0},
+            {q: "90. ¿La presentación de una acción de protección puede realizarse?", opts: ["a. De forma oral o escrita.", "b. De forma escrita", "c. De forma oral", "d. A través de medios de comunicación"], a: 0},
+            {q: "91. ¿La notificación al legitimado pasivo dentro de una acción de garantías jurisdiccionales se lo hace?", opts: ["a. Por cualquier medio, siempre y cuando se justifique ser el más eficaz", "b. Por los medios previstos en el COGEP", "c. Por los medios previstos en el COIP", "d. Por los medios previstos en la LOGJCC."], a: 0},
+            {q: "92. ¿Para la presentación de una acción de protección requiero el patrocinio de un abogado?", opts: ["a. No es necesario.", "b. Siempre", "c. Solo cuando el juez lo disponga", "d. En ningún caso"], a: 0},
+            {q: "93. ¿Con base al principio Iura Novit Curia, en caso que el legitimado activo dentro de un proceso de garantías jurisdiccionales omita u olvide señalar las normas infringidas, el juez debe?", opts: ["a. Suplir esa falta y señalar el mismo las normas y/o derechos vulnerados.", "b. Pedir el auxilio de un abogado de oficio", "c. Mandar a completar la demanda", "d. Ninguna de las anteriores"], a: 0},
+            {q: "94. ¿La sentencia emitida por el juez de primera instancia constitucional, se apelan ante?", opts: ["a. La Corte Provincial.", "b. La Corte Constitucional", "c. La Corte Nacional de Justicia", "d. El Consejo de la judicatura"], a: 0},
+            {q: "95. ¿Las sentencias constitucionales emitidas por un juez constitucional deben ser cumplidas?", opts: ["a. Desde el momento en que son dictadas.", "b. Desde el momento en que son ratificadas por el Tribunal de alzada", "c. Luego de seguirse el proceso de ejecución", "d. Ninguna de las otras opciones"], a: 0},
+            {q: "96. ¿Las acciones de garantías jurisdiccionales pueden?", opts: ["a. Estar o no acompañadas de solicitud de medidas cautelares.", "b. Siempre ir acompañadas de solicitud de medidas cautelares", "c. Justificar que se ha presentado medidas cautelares independientes antes otro juzgador", "d. Ninguna de las otras opciones"], a: 0},
+            {q: "97. ¿Los jueces ordinarios de primera instancia son considerados jueces constitucionales competentes para conocer?", opts: ["a. Todas las otras opciones.", "b. Acción de protección", "c. Acción de habeas data", "d. Acción de habeas corpus"], a: 0},
+            {q: "98. ¿La acción extraordinaria de protección es conocida por?", opts: ["a. La Corte Constitucional.", "b. La Corte Provincial", "c. La Corte Nacional de Justicia", "d. Ninguna de las otras opciones"], a: 0},
+            {q: "99. ¿La acción de incumplimiento es una garantía jurisdiccional?", opts: ["a. No", "b. Si.", "c. En algunas ocasiones", "d. Desconozco"], a: 1},
+            {q: "100. ¿Quién puede beneficiarse de las medidas de reparación?", opts: ["a. La Víctima.", "b. El legitimado activo", "c. El legitimado pasivo", "d. Todos"], a: 0},
+            {q: "101. ¿La acción de incumplimiento protege uno de los componentes fundamentales del derecho a la tutela judicial efectiva, que es?", opts: ["a. Ejecución de la decisión.", "b. Acceso a la justicia", "c. Debido proceso", "d. Seguridad jurídica"], a: 0},
+            {q: "102. ¿Qué puede hacer un juez que no participó en las decisiones previas que establecen precedentes obligatorios?", opts: ["a. Está obligado a seguir el precedente, incluso si no participó en su formación.", "b. Puede emitir un voto concurrente o salvado, pues no está vinculado por ese precedente.", "c. Solo puede apartarse del precedente si todos los demás jueces también lo hacen.", "d. Puede ignorar el precedente y dictar una decisión totalmente independiente sin justificarla."], a: 1},
+            {q: "103. ¿Cuál es el plazo que tiene la jueza o juez para remitir el expediente y el informe a la Corte Constitucional?", opts: ["a. Cinco días desde que se dictó la sentencia", "b. Cinco días desde que el interesado hizo la solicitud", "c. Cinco días desde que se ejecutorió la sentencia.", "d. No tiene un plazo establecido, solamente es un plazo razonable"], a: 1},
+            {q: "104. ¿Cuánto tiempo tiene el afectado para solicitar a la Corte Constitucional que ordene a la jueza o juez la remisión del expediente y declare el incumplimiento de la sentencia, cuando el juez no cumple con el plazo?", opts: ["a. Dentro de cinco días siguientes al vencimiento del plazo", "b. Dentro de diez días siguientes al vencimiento del término de 5 días.", "c. Dentro de quince días siguientes al vencimiento del término de 10 días", "d. No existe un tiempo límite para esta solicitud"], a: 1},
+            {q: "105. ¿Qué requisito adicional debe cumplirse para que los fallos de triple reiteración de la Corte Nacional de Justicia tengan carácter de jurisprudencia obligatoria?", opts: ["a. Que el Presidente de la Corte Nacional de Justicia lo apruebe", "b. Que el pleno de la Corte Nacional de Justicia pronuncie conforme el precedente.", "c. Que el precedente sea publicado en el Registro Oficial", "d. Que el precedente sea revisado por la Corte Constitucional"], a: 1},
+            {q: "106. ¿Qué ocurre si hay más de tres sentencias que respaldan un criterio de jurisprudencia obligatoria de la Corte Nacional de Justicia y una de ellas es dejada sin efecto por la Corte Constitucional?", opts: ["a. El criterio pierde automáticamente su carácter obligatorio", "b. Se debe emitir una nueva sentencia para confirmar el criterio", "c. El criterio se mantiene como obligatorio.", "d. El criterio queda sin efecto temporalmente hasta que se resuelva la situación"], a: 2},
+            {q: "107. ¿Qué sucede si la Corte Constitucional deja sin efecto una de las tres únicas sentencias que conforman un fallo de triple reiteración de la Corte Nacional de Justicia?", opts: ["a. El criterio sigue siendo jurisprudencia vinculante sin necesidad de más acciones.", "b. Ya no se cumple el requisito constitucional para que ese criterio sea jurisprudencia vinculante.", "c. La Corte Nacional de Justicia debe esperar a que la Corte Constitucional emita un nuevo fallo para actuar.", "d. La Corte Nacional de Justicia debe ratificar el criterio sin cambios"], a: 1},
+            {q: "108. ¿Cuándo se considera que un argumento es claro, relacionado con la inobservancia de precedentes constitucionales presentado en una acción extraordinaria de protección?", opts: ["a. Cuando el accionante menciona el número de sentencia que contiene el precedente.", "b. Cuando el accionante reúne la tesis, base fáctica y justificación jurídica, incluyendo la identificación de la regla de precedente y la exposición de su aplicabilidad al caso.", "c. Cuando el accionante presenta únicamente la tesis, base fáctica y justificación jurídica.", "d. Cuando el accionante expone únicamente la tesis y justificación jurídica incluyendo la identificación de la regla de precedente y la exposición de su aplicabilidad al caso."], a: 1},
+            {q: "109. ¿Qué carácter tiene la acción de incumplimiento en caso de que una sentencia constitucional no sea ejecutada o se ejecute de manera defectuosa?", opts: ["a. Principal y obligatoria", "b. Subsidiaria y excepcional.", "c. Informativa y consultiva", "d. Subsidiaria y sancionatoria"], a: 1},
+            {q: "110. ¿Qué es la 'ratio decidendi' en el contexto de la formación de un precedente?", opts: ["a. La opinión minoritaria que acompaña la sentencia", "b. La razón esencial que justifica la decisión principal.", "c. La razón adicional que justifica la decisión principal", "d. La razón externa que no afecta la decisión"], a: 1},
+            {q: "111. ¿Qué ocurre cuando, debido a la existencia de votos particulares, no se alcanzan cinco votos totalmente afirmativos en una decisión de la Corte Constitucional para que esta se configure como precedente en sentido estricto?", opts: ["a. Se considera precedente si, al leer la sentencia y los votos particulares, se identifican al menos cinco votos a favor de la ratio decidendi.", "b. Se necesita una nueva votación para alcanzar cinco votos afirmativos", "c. Se descarta la decisión como precedente automáticamente", "d. La decisión se mantiene como precedente solo si el presidente de la Corte Constitucional, con voto dirimente, señala que la decisión contiene un precedente"], a: 0},
+            {q: "112. ¿Qué característica debe tener todo precedente judicial en sentido estricto o regla de precedente?", opts: ["a. Debe ser elaborada interpretativamente por el decisor, utilizando solamente la literalidad del texto normativo.", "b. Debe ser elaborada interpretativamente por el decisor, no simplemente tomada del derecho preexistente.", "c. Debe ser elaborada interpretativamente por el decisor, a partir de costumbre y doctrina, ignorando el texto normativo.", "d. Debe ser elaborada interpretativamente por el decisor, a partir de su voluntad política."], a: 1},
+            {q: "113. ¿Qué significa que un precedente tenga efecto “ex nunc”?", opts: ["a. Que se aplica de manera retroactiva a casos anteriores.", "b. Que se debe obedecer desde su expedición en adelante, sin afectar situaciones pasadas.", "c. Que su aplicación depende de la voluntad del juez en cada caso.", "d. Que solo se aplica en casos excepcionales."], a: 1},
+            {q: "114. ¿La vulneración del derecho a la seguridad jurídica por la inobservancia de un precedente constitucional siempre acarrea de forma automática la vulneración del derecho a la igualdad?", opts: ["a. Verdadero", "b. Falso."], a: 1},
+            {q: "115. ¿Qué es una premisa normativa en el contexto de la ratio decidendi?", opts: ["a. El argumento legal del caso sin relación directa con la resolución.", "b. La regla aplicada para resolver el caso concreto, compuesta por un supuesto de hecho y una consecuencia jurídica.", "c. El argumento legal del juez que sustenta la decisión principal.", "d. El argumento sobre la importancia legal del caso sin aplicación práctica."], a: 1},
+            {q: "116. ¿Los precedentes son inmutables?", opts: ["a. Sí, una vez establecidos no pueden ser modificados ni anulados.", "b. No, pueden ser revisados, modificados o dejados sin efecto por la misma Corte u órgano competente.", "c. Sí, una vez establecidos se aplican sin excepción en todos los casos futuros.", "d. No, pero solo pueden ser modificados por el Poder Legislativo."], a: 1},
+            {q: "117. ¿Qué puede hacer la Corte Constitucional si determina, de forma motivada, que un caso se diferencia en una propiedad relevante respecto a otro que dio lugar a un precedente?", opts: ["a. Ignorar la diferencia y aplicar el precedente sin cambios.", "b. Introducir una excepción en la regla de precedente correspondiente.", "c. Declarar nula la regla de precedente sin más análisis.", "d. Delegar la decisión a un tribunal inferior para que tome una decisión distinta."], a: 1}
+        ];
+
+        let questions = rawBank.sort(() => Math.random() - 0.5);
+        let cur = 0, score = 0, userRes = [], isValidated = false;
+
+        function init() {
+            const wrap = document.getElementById('questions-wrapper');
+            questions.forEach((q, i) => {
+                const div = document.createElement('div');
+                div.className = 'question' + (i === 0 ? ' active' : '');
+                div.id = 'q-' + i;
+                let optsHtml = '';
+                q.opts.forEach((o, oi) => {
+                    optsHtml += `<div class="option" onclick="sel(this,${i},${oi})">${o}</div>`;
+                });
+                div.innerHTML = `<p style="font-weight:bold; font-size:1.15em; color:#2c3e50;">${q.q}</p>${optsHtml}`;
+                wrap.appendChild(div);
+            });
+        }
+
+        function sel(el, qi, oi) {
+            if (isValidated) return;
+            document.getElementById('q-'+qi).querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+            el.classList.add('selected');
+            userRes[qi] = oi;
+            document.getElementById('action-btn').disabled = false;
+        }
+
+        function handleAction() {
+            const btn = document.getElementById('action-btn');
+            if (!isValidated) {
+                validateAnswer();
+                isValidated = true;
+                btn.innerText = (cur === questions.length - 1) ? "Ver Resultado Final" : "Pasar a la Siguiente";
+            } else {
+                nextQuestion();
+                isValidated = false;
+                btn.innerText = "Validar Respuesta";
+                btn.disabled = true;
+            }
+        }
+
+        function validateAnswer() {
+            const q = questions[cur];
+            const selectedIdx = userRes[cur];
+            const options = document.getElementById('q-'+cur).querySelectorAll('.option');
+            const feedback = document.getElementById('feedback-area');
+
+            options.forEach((opt, idx) => {
+                if (idx === q.a) opt.classList.add('correct');
+                if (idx === selectedIdx && idx !== q.a) opt.classList.add('wrong');
+            });
+
+            if (selectedIdx === q.a) {
+                score++;
+                feedback.innerText = "✅ ¡Correcto!";
+                feedback.style.color = "#0f5132";
+            } else {
+                feedback.innerText = "❌ Incorrecto";
+                feedback.style.color = "#842029";
+            }
+        }
+
+        function nextQuestion() {
+            document.getElementById('feedback-area').innerText = "";
+            document.getElementById('q-'+cur).classList.remove('active');
+            cur++;
+            if (cur < questions.length) {
+                document.getElementById('q-'+cur).classList.add('active');
+                document.getElementById('progress').innerText = `Pregunta ${cur+1} de ${questions.length}`;
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            document.getElementById('quiz-view').style.display = 'none';
+            document.getElementById('result-view').style.display = 'block';
+            document.getElementById('score-display').innerText = score;
+            const list = document.getElementById('full-review-list');
+            questions.forEach((q, i) => {
+                const card = document.createElement('div');
+                card.className = 'review-card';
+                let opts = '';
+                const isCorrect = userRes[i] === q.a;
+                
+                q.opts.forEach((opt, oi) => {
+                    let cls = '';
+                    if (oi === q.a) cls = 'rev-correct';
+                    else if (oi === userRes[i]) cls = 'rev-wrong';
+                    opts += `<div class="rev-option ${cls}">${opt}</div>`;
+                });
+
+                const status = isCorrect ? '<span style="color:green;">✔ Correcto</span>' : '<span style="color:red;">✘ Incorrecto</span>';
+                card.innerHTML = `<p style="font-weight:bold;">${q.q} — ${status}</p>${opts}`;
+                list.appendChild(card);
+            });
+        }
+        init();
+    </script>
+</body>
+</html>
